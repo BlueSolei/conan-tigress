@@ -12,7 +12,7 @@ class TigressConan(ConanFile):
     description = "Tigress is a diversifying virtualizer/obfuscator for the C language"
     topics = ("obfuscator",)
     settings = "os", "arch"
-    exports = "zip/*"
+    exports = "*.zip"
 
     def configure(self):
         s = self.settings
@@ -20,10 +20,10 @@ class TigressConan(ConanFile):
             s.os == "Linux" and s.arch == "armv7") or (s.os == "Macos" and s.arch == "x86_64")
         if not supportedEnv:
             raise ConanInvalidConfiguration(
-                f"Tigress only supported oss are Darwin-x86_64, Linux-armv7, Linux-x86_64. This machine os: {s.os}-{s.arch}")
+                f"Tigress only supported oss are Darwin-x86_64, Linux-armv7, Linux-x86_64. This machine os: {s.os}-{s.arch}.")
 
     def build(self):
-        zip_name = os.path.join("zip", f"tigress-{self.version}-bin.zip")
+        zip_name = f"tigress-{self.version}-bin.zip"
         tools.unzip(zip_name, keep_permissions=True)
         os.unlink(zip_name)
 
