@@ -1,25 +1,25 @@
 import os
-
-from conans import ConanFile, CMake, tools
+from conans import ConanFile, tools
 
 
 class TigressTestConan(ConanFile):
-    settings = "os", "compiler", "build_type", "arch"
-    generators = "cmake"
+    settings = "os", "arch"
 
     def build(self):
-        cmake = CMake(self)
-        # Current dir is "test_package/build/<build_id>" and CMakeLists.txt is
-        # in "test_package"
-        cmake.configure()
-        cmake.build()
-
-    def imports(self):
-        self.copy("*.dll", dst="bin", src="bin")
-        self.copy("*.dylib*", dst="bin", src="lib")
-        self.copy('*.so*', dst='bin', src='lib')
+        pass
 
     def test(self):
-        if not tools.cross_building(self):
-            os.chdir("bin")
-            self.run(".%sexample" % os.sep)
+        # example of runnig tigress taken from INSTALL file in root of the unzipped tigress
+        s = self.settings
+        compilerVersion = "5.1" if s.os == "Macos" else "4.6"
+        compilerName = "Clang" if s.os == "Macos" else "Gcc"
+        osName = "Darwin" if s.os == "Macos" else s.os
+        env = f"{s.arch}:{osName}:{compilerName}:{compilerVersion}"
+
+        cmdTigress = f"tigress --Environment={env} --Transform=Virtualize --Functions=main,fib,fac --out=result.c $TIGRESS_HOME/test1.c"
+        cmdBuild = "gcc -o result result.c"
+        cmdStrip = "strip result"
+        cmdRun = "./result"
+        testTigress = [cmdTigress, cmdBuild, cmdStrip, cmdRun]
+        for cmd in testTigress:
+            self.run(cmd)

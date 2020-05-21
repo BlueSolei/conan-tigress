@@ -1,47 +1,37 @@
-from conans import ConanFile, CMake, tools
+import os
+from conans import ConanFile, tools
+from conans.errors import ConanInvalidConfiguration
 
 
 class TigressConan(ConanFile):
     name = "tigress"
-    version = "0.1"
+    version = "3.1"
     license = "<Put the package license here>"
-    author = "<Put your name here> <And your email here>"
+    author = "Shaul Fridman <shaul.fridman@gmail.com>"
     url = "<Package recipe repository url here, for issues about the package>"
-    description = "<Description of Tigress here>"
-    topics = ("<Put some tag here>", "<here>", "<and here>")
-    settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False]}
-    default_options = {"shared": False}
-    generators = "cmake"
+    description = "Tigress is a diversifying virtualizer/obfuscator for the C language"
+    topics = ("obfuscator",)
+    settings = "os", "arch"
+    exports = "zip/*"
 
-    def source(self):
-        self.run("git clone https://github.com/conan-io/hello.git")
-        # This small hack might be useful to guarantee proper /MT /MD linkage
-        # in MSVC if the packaged project doesn't have variables to set it
-        # properly
-        tools.replace_in_file("hello/CMakeLists.txt", "PROJECT(HelloWorld)",
-                              '''PROJECT(HelloWorld)
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()''')
+    def configure(self):
+        s = self.settings
+        supportedEnv = (s.os == "Linux" and s.arch == "x86_64") or (
+            s.os == "Linux" and s.arch == "armv7") or (s.os == "Macos" and s.arch == "x86_64")
+        if not supportedEnv:
+            raise ConanInvalidConfiguration(
+                f"Tigress only supported oss are Darwin-x86_64, Linux-armv7, Linux-x86_64. This machine os: {s.os}-{s.arch}")
 
     def build(self):
-        cmake = CMake(self)
-        cmake.configure(source_folder="hello")
-        cmake.build()
-
-        # Explicit way:
-        # self.run('cmake %s/hello %s'
-        #          % (self.source_folder, cmake.command_line))
-        # self.run("cmake --build . %s" % cmake.build_config)
+        zip_name = os.path.join("zip", f"tigress-{self.version}-bin.zip")
+        tools.unzip(zip_name, keep_permissions=True)
+        os.unlink(zip_name)
 
     def package(self):
-        self.copy("*.h", dst="include", src="hello")
-        self.copy("*hello.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.dylib", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
+        self.copy("*", src="tigress", dst="bin", keep_path=True, )
+        self.copy("**/*", src="tigress", dst="bin", keep_path=True)
 
     def package_info(self):
-        self.cpp_info.libs = ["hello"]
-
+        bin = os.path.join(self.package_folder, "bin", self.version)
+        self.env_info.PATH.append(bin)
+        self.env_info.TIGRESS_HOME = bin
